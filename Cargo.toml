@@ -1,0 +1,10 @@
+[package]
+name = "premiumize-rust"
+version = "0.1.0"
+authors = ["cody"]
+edition = "2018"
+
+[dependencies]
+reqwest = { version = "0.10.1", features = ["blocking", "json"] }
+serde_json = "1.0.48"
+serde = { version = "1.0.104", features = ["derive"] }
