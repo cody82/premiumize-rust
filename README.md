@@ -1,2 +1,2 @@
 # Usage
-`premiumize-rust <customer-id> <api-key>`
+`premiumize-rust <local directory> <customer-id> <api-key>`
