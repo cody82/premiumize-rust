@@ -5,8 +5,7 @@ use std::path::Path;
 use std::fs::File;
 use std::fs::create_dir;
 use reqwest::blocking::Client;
-//use std::io;
-use std::io::{BufRead, ErrorKind, IoSlice, IoSliceMut, Read, Write};
+use std::io::{ErrorKind, Read, Write};
 
 pub fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> std::io::Result<u64>
 where
@@ -65,6 +64,21 @@ pub struct Response
     folder_id: String
 }
 
+type Result<T> = std::result::Result<T, PremiumizeError>;
+#[derive(Debug, Clone)]
+pub struct PremiumizeError;
+
+impl std::convert::From<reqwest::Error> for PremiumizeError {
+    fn from(_e: reqwest::Error) -> Self {
+        Self{}
+    }
+}
+impl std::convert::From<std::io::Error> for PremiumizeError {
+    fn from(_e: std::io::Error) -> Self {
+        Self{}
+    }
+}
+
 pub struct Premiumize
 {
     pub customer_id: String,
@@ -74,7 +88,7 @@ pub struct Premiumize
 
 impl Premiumize
 {
-    fn list(&self, folder_id: Option<&str>) -> std::result::Result<Response, Box<dyn std::error::Error>>
+    fn list(&self, folder_id: Option<&str>) -> std::result::Result<Response, reqwest::Error>
     {
         let api = "https://www.premiumize.me/api/";
         let mut url = api.to_owned() + "folder/list" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str();
@@ -85,7 +99,6 @@ impl Premiumize
             None => {}
         }
 
-        //let resp: String = reqwest::blocking::get(url.as_str())?.text()?;
         let resp: String = self.client.get(url.as_str()).send()?.text()?;
 
         let deserialized: Response = serde_json::from_str(resp.as_str()).unwrap();
@@ -93,7 +106,7 @@ impl Premiumize
         Ok(deserialized)
     }
     
-    pub fn download(&self, folder_id: Option<&str>, local_dir: &str) -> std::result::Result<(), Box<dyn std::error::Error>>
+    pub fn download(&self, folder_id: Option<&str>, local_dir: &str) -> Result<()>
     {
         match folder_id
         {
@@ -105,54 +118,20 @@ impl Premiumize
 
         for item in response.content
         {
-            //let path = local_dir.to_owned() + item.name.as_str();
             let local = Path::new(local_dir).join(item.name.as_str());
             let path = local.to_str().unwrap();
-            if /* !local.exists() &&*/ !item.name.ends_with("exe")
+            if item.type_ == "folder"
             {
-                if item.type_ == "folder"
-                {
-                    println!("folder {}({}) -> {}...", item.name, item.id, path);
-                    create_dir(&local).ok();
-                    self.download(Some(item.id.as_str()), path)?;
-                    /*loop {
-                        match self.download(Some(item.id.as_str()), path) {
-                            Ok(e) => {break;}
-                            Err(e) => {
-                                println!("retry...");
-                            }
-                        }
-                    }*/
-                }
-                else if item.type_ == "file" && !local.exists()
-                {
-                    /*loop {
-                        println!("downloading {}...", path);
-                        //let mut resp = reqwest::blocking::get(item.link.as_str())?;
-                        match reqwest::blocking::get(item.link.as_str()) {
-                            Ok(mut resp) => {
-                                let mut file = File::create(path)?;
-                                let bytes = resp.copy_to(&mut file)?;
-                                break;
-                            }
-                            Err(e) => {
-                                println!("retry...");
-                            }
-                        }
-                    }*/
-                    println!("downloading {}...", item.link.as_str());
-                    //let mut resp = reqwest::blocking::get(item.link.as_str())?;
-                    let mut resp = self.client.get(item.link.as_str()).send()?;
-                    let mut file = File::create(path)?;
-                    //let bytes = resp.copy_to(&mut file)?;
-                    let bytes = copy(&mut resp, &mut file)?;//.map_err(::error::from)
-
-                    //println!("{} bytes written to {}", bytes, path);
-                }
+                println!("folder {}({}) -> {}", item.name, item.id, path);
+                create_dir(&local).ok();
+                self.download(Some(item.id.as_str()), path)?;
             }
-            else
+            else if item.type_ == "file" && !local.exists()
             {
-                println!("skip {}", item.name);
+                println!("downloading {}", item.link.as_str());
+                let mut resp = self.client.get(item.link.as_str()).send()?;
+                let mut file = File::create(path)?;
+                let _bytes = copy(&mut resp, &mut file)?;
             }
         }
         Ok(())
