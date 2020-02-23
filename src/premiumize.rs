@@ -12,7 +12,7 @@ where
     R: Read,
     W: Write,
 {
-    let mut buf : [u8; 128*1024] = [0;128*1024];
+    let mut buf : [u8; 512*1024] = [0;512*1024];
 
     let mut written = 0;
     loop {
@@ -86,12 +86,40 @@ pub struct Premiumize
     pub client: Client
 }
 
+const API: &'static str = "https://www.premiumize.me/api/";
+
 impl Premiumize
 {
+    pub fn new(customer_id: &str, api_key: &str) -> Premiumize {
+        Premiumize {
+            customer_id: String::from(customer_id),
+            key: String::from(api_key),
+            client: Client::new()
+        }
+    }
+
+    pub fn id(&self, name: &str) -> Result<String> {
+        let resp = self.list(None)?;
+
+        for f in resp.content.iter() {
+            if f.name == name {
+                return Ok(f.id.clone());
+            }
+        }
+        Err(PremiumizeError{})
+    }
+
+    pub fn del(&self, name: &str) -> Result<()> {
+        let id = self.id(name)?;
+        let url = API.to_owned() + "folder/delete" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&id=" + id.as_str();
+        let resp: String = self.client.get(url.as_str()).send()?.text()?;
+
+        Ok(())
+    }
+
     fn list(&self, folder_id: Option<&str>) -> std::result::Result<Response, reqwest::Error>
     {
-        let api = "https://www.premiumize.me/api/";
-        let mut url = api.to_owned() + "folder/list" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str();
+        let mut url = API.to_owned() + "folder/list" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str();
 
         match folder_id
         {
