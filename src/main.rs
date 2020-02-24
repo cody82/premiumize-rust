@@ -45,7 +45,8 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
 
     if let Some(matches) = matches.subcommand_matches("download") {
         if matches.is_present("folder") {
-            p.download(Some(matches.value_of("folder").unwrap()), matches.value_of("dest").unwrap())?;
+            let id = p.id(matches.value_of("folder").unwrap())?;
+            p.download(Some(id.as_str()), matches.value_of("dest").unwrap())?;
         }
         else {
             p.download(None, matches.value_of("dest").unwrap())?;
