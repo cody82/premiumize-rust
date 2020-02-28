@@ -30,8 +30,8 @@ where
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Folder
 {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
     #[serde(rename(deserialize = "type"))]
     type_: String,
     #[serde(default)]
@@ -53,9 +53,9 @@ pub struct Folder
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Response
 {
-    content: Vec<Folder>,
+    pub content: Vec<Folder>,
     #[serde(default)]
-    name: String,
+    pub name: String,
     #[serde(default)]
     parent_id: String,
     #[serde(default)]
@@ -98,15 +98,20 @@ impl Premiumize
         }
     }
 
-    pub fn id(&self, name: &str) -> Result<String> {
-        let resp = self.list(None)?;
+    pub fn id(&self, path: &str) -> Result<String> {
+        let mut list = self.list(None)?;
 
-        for f in resp.content.iter() {
-            if f.name == name {
-                return Ok(f.id.clone());
+        for part in path.split("/") {
+            if part.len() > 0 {
+                match list.content.iter().find(|&x| x.name == part) {
+                    Some(x) => {
+                        list = self.list(Some(x.id.as_str()))?;
+                    }
+                    None => return Err(PremiumizeError{})
+                }
             }
         }
-        Err(PremiumizeError{})
+        Ok(list.folder_id)
     }
 
     pub fn del(&self, name: &str) -> Result<()> {
@@ -117,7 +122,7 @@ impl Premiumize
         Ok(())
     }
 
-    fn list(&self, folder_id: Option<&str>) -> std::result::Result<Response, reqwest::Error>
+    pub fn list(&self, folder_id: Option<&str>) -> std::result::Result<Response, reqwest::Error>
     {
         let mut url = API.to_owned() + "folder/list" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str();
 

@@ -26,6 +26,18 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                           .index(1)
                                           .required(true)
                                           .help("Folder to delete")))
+                            .subcommand(SubCommand::with_name("id")
+                                        .about("get id")
+                                        .arg(Arg::with_name("folder")
+                                            .index(1)
+                                            .required(true)
+                                            .help("path")))
+                            .subcommand(SubCommand::with_name("list")
+                                        .about("list folder")
+                                        .arg(Arg::with_name("folder")
+                                            .index(1)
+                                            .required(true)
+                                            .help("path")))
                         .subcommand(SubCommand::with_name("download")
                                     .about("downloads a folder")
                                     .arg(Arg::with_name("dest")
@@ -52,6 +64,16 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
             p.download(None, matches.value_of("dest").unwrap())?;
         }
     } else if let Some(matches) = matches.subcommand_matches("delete") {
+        p.del(matches.value_of("folder").unwrap())?;
+    } else if let Some(matches) = matches.subcommand_matches("id") {
+        let id = p.id(matches.value_of("folder").unwrap())?;
+        println!("{}", id.as_str());
+    } else if let Some(matches) = matches.subcommand_matches("list") {
+        let id = p.id(matches.value_of("folder").unwrap())?;
+        let list = p.list(Some(id.as_str()))?;
+        for f in list.content {
+            println!("{}", f.name);
+        }
     } else {
     }
     
