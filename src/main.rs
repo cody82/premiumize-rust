@@ -1,7 +1,21 @@
 mod premiumize;
 use premiumize::Premiumize;
+use premiumize::PremiumizeError;
 extern crate clap;
 use clap::{Arg, App, SubCommand};
+use std::fs;
+use std::env;
+use serde::{Serialize, Deserialize};
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Config
+{
+    #[serde(default)]
+    pub customer_id: String,
+    #[serde(default)]
+    pub api_key: String
+}
 
 fn main() -> Result<(), premiumize::PremiumizeError> {
     let matches = App::new("Premiumize downloader")
@@ -13,13 +27,13 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                 .long("customer-id")
                                 .help("Sets the customer id")
                                 .takes_value(true)
-                                .required(true))
+                                .required(false))
                             .arg(Arg::with_name("api-key")
                                     .short("k")
                                     .long("api-key")
                                     .help("Sets the api key")
                                     .takes_value(true)
-                                    .required(true))
+                                    .required(false))
                           .subcommand(SubCommand::with_name("delete")
                                       .about("deletes a folder")
                                       .arg(Arg::with_name("folder")
@@ -59,7 +73,42 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                     )
                           .get_matches();
     
-    let p = Premiumize::new(matches.value_of("customer-id").unwrap(), matches.value_of("api-key").unwrap());
+    let mut home = match env::home_dir() {
+        Some(path) => path,
+        None => return Err(PremiumizeError{})
+    };
+
+    home.push(".premiumize-rust.json");
+    //println!("{}", home.display());
+
+    let config : Option<Config> = match fs::read_to_string(home) {
+        Ok(x) => Some(serde_json::from_str(x.as_str()).unwrap()),
+        Err(x) => None
+    };
+
+    let mut customer_id : Option<String> = None;
+    let mut api_key : Option<String> = None;
+
+    if config.is_some() {
+        let c = &config.unwrap();
+        customer_id = Some(c.customer_id.clone());
+        api_key = Some(c.api_key.clone());
+    }
+    
+
+    if matches.is_present("customer-id") {
+        customer_id = Some(String::from(matches.value_of("customer-id").unwrap()));
+    }
+    if matches.is_present("api-key") {
+        api_key = Some(String::from(matches.value_of("api-key").unwrap()));
+    }
+
+    if customer_id.is_none() || api_key.is_none() {
+        println!("Customer ID or API key not set.");
+        return Err(PremiumizeError{});
+    }
+
+    let p = Premiumize::new(customer_id.unwrap().as_str(), api_key.unwrap().as_str());
 
     if let Some(matches) = matches.subcommand_matches("download") {
         if matches.is_present("folder") {
