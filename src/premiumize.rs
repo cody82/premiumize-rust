@@ -122,6 +122,25 @@ impl Premiumize
         Ok(())
     }
 
+    pub fn mkdir2(&self, fullname: &str) -> Result<()> {
+        let parts : Vec<&str> = fullname.split("/").collect();
+        let name = match parts.last() {
+            Some(x) => x,
+            None => return Err(PremiumizeError{})
+        };
+
+        let path = parts.iter().take(parts.len() - 1).fold("".to_string(), |a,b| a + "/" + b);
+        self.mkdir(path.as_str(), name)
+    }
+    
+    pub fn mkdir(&self, path: &str, name: &str) -> Result<()> {
+        let parent_id = self.id(path)?;
+        let url = API.to_owned() + "folder/create" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&parent_id=" + parent_id.as_str() + "&name=" + name;
+        let resp: String = self.client.get(url.as_str()).send()?.text()?;
+
+        Ok(())
+    }
+
     pub fn list(&self, folder_id: Option<&str>) -> std::result::Result<Response, reqwest::Error>
     {
         let mut url = API.to_owned() + "folder/list" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str();

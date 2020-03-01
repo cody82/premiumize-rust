@@ -26,6 +26,12 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                           .index(1)
                                           .required(true)
                                           .help("Folder to delete")))
+                            .subcommand(SubCommand::with_name("mkdir")
+                                        .about("create a folder")
+                                        .arg(Arg::with_name("folder")
+                                            .index(1)
+                                            .required(true)
+                                            .help("Folder to create")))
                             .subcommand(SubCommand::with_name("id")
                                         .about("get id")
                                         .arg(Arg::with_name("folder")
@@ -74,6 +80,9 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
         for f in list.content {
             println!("{}", f.name);
         }
+    } else if let Some(matches) = matches.subcommand_matches("mkdir") {
+        let f = matches.value_of("folder").unwrap();
+        p.mkdir2(f)?;
     } else {
     }
     
