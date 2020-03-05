@@ -6,8 +6,9 @@ use std::fs::File;
 use std::fs::create_dir;
 use reqwest::blocking::Client;
 use std::io::{ErrorKind, Read, Write};
+use indicatif::ProgressBar;
 
-pub fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> std::io::Result<u64>
+pub fn copy2<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W, bar: &ProgressBar) -> std::io::Result<u64>
 where
     R: Read,
     W: Write,
@@ -24,6 +25,7 @@ where
         };
         writer.write_all(&buf[..len])?;
         written += len as u64;
+        bar.inc(len as u64);
     }
 }
 
@@ -180,10 +182,15 @@ impl Premiumize
             }
             else if item.type_ == "file" && !local.exists()
             {
-                println!("downloading {}", item.link.as_str());
+                println!("file {}", item.link.as_str());
+                
+                let bar = ProgressBar::new(item.size);
+
                 let mut resp = self.client.get(item.link.as_str()).send()?;
                 let mut file = File::create(path)?;
-                let _bytes = copy(&mut resp, &mut file)?;
+                let _bytes = copy2(&mut resp, &mut file, &bar)?;
+                
+                bar.finish();
             }
         }
         Ok(())
