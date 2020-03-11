@@ -187,9 +187,13 @@ impl Premiumize
                 let bar = ProgressBar::new(item.size);
 
                 let mut resp = self.client.get(item.link.as_str()).send()?;
-                let mut file = File::create(path)?;
-                let _bytes = copy2(&mut resp, &mut file, &bar)?;
-                
+                if resp.status().is_success() {
+                    let mut file = File::create(path)?;
+                    let _bytes = copy2(&mut resp, &mut file, &bar)?;
+                }
+                else {
+                    return Err(PremiumizeError{});
+                }
                 bar.finish();
             }
         }
