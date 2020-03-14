@@ -40,6 +40,12 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                           .index(1)
                                           .required(true)
                                           .help("Folder to delete")))
+                            .subcommand(SubCommand::with_name("clear")
+                                        .about("deletes all files/folders in a folder")
+                                        .arg(Arg::with_name("folder")
+                                            .index(1)
+                                            .required(true)
+                                            .help("Folder to clear")))
                             .subcommand(SubCommand::with_name("mkdir")
                                         .about("create a folder")
                                         .arg(Arg::with_name("folder")
@@ -120,6 +126,8 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
         }
     } else if let Some(matches) = matches.subcommand_matches("delete") {
         p.del(matches.value_of("folder").unwrap())?;
+    } else if let Some(matches) = matches.subcommand_matches("clear") {
+        p.clear(matches.value_of("folder").unwrap())?;
     } else if let Some(matches) = matches.subcommand_matches("id") {
         let id = p.id(matches.value_of("folder").unwrap())?;
         println!("{}", id.as_str());

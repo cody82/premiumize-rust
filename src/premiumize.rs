@@ -118,9 +118,31 @@ impl Premiumize
 
     pub fn del(&self, name: &str) -> Result<()> {
         let id = self.id(name)?;
-        let url = API.to_owned() + "folder/delete" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&id=" + id.as_str();
+        self.del_id(id.as_str())
+    }
+
+    pub fn del_id(&self, id: &str) -> Result<()> {
+        let url = API.to_owned() + "folder/delete" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&id=" + id;
         let resp: String = self.client.get(url.as_str()).send()?.text()?;
 
+        Ok(())
+    }
+
+    pub fn clear(&self, folder: &str) -> Result<()> {
+        let id = self.id(folder)?;
+        let response = self.list(Some(id.as_str()))?;
+        
+        for item in response.content
+        {
+            if item.type_ == "folder"
+            {
+                self.del_id(item.id.as_str())?;
+            }
+            else if item.type_ == "file"
+            {
+                // todo
+            }
+        }
         Ok(())
     }
 
