@@ -77,6 +77,19 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                         .takes_value(true)
                                         .help("Folder to download"))
                                     )
+                        .subcommand(SubCommand::with_name("transfer")
+                                    .about("transfers an url")
+                                    .arg(Arg::with_name("url")
+                                        .index(1)
+                                        .required(true)
+                                        .takes_value(true)
+                                        .help("Source url"))
+                                    .arg(Arg::with_name("folder")
+                                        .index(2)
+                                        .required(true)
+                                        .takes_value(true)
+                                        .help("Destination folder"))
+                                    )
                           .get_matches();
     
     let mut home = match env::home_dir() {
@@ -137,6 +150,10 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
         for f in list.content {
             println!("{}", f.name);
         }
+    } else if let Some(matches) = matches.subcommand_matches("transfer") {
+        let folder = matches.value_of("folder").unwrap();
+        let url = matches.value_of("url").unwrap();
+        p.create_transfer_url(url, folder)?;
     } else if let Some(matches) = matches.subcommand_matches("mkdir") {
         let f = matches.value_of("folder").unwrap();
         p.mkdir2(f)?;

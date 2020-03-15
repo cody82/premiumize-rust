@@ -157,6 +157,21 @@ impl Premiumize
         self.mkdir(path.as_str(), name)
     }
     
+    pub fn create_transfer_url(&self, url: &str, target_dir: &str) -> Result<()> {
+        let folder_id = self.id(target_dir)?;
+        let requrl = API.to_owned() + "transfer/create" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str();// + "&src=" + url + "&folder_id=" + folder_id.as_str();
+
+        let params = [("src", url), ("folder_id", folder_id.as_str())];
+        let resp = self.client.post(requrl.as_str()).form(&params).send()?;
+
+        if resp.status().is_success() {
+        }
+        else {
+            return Err(PremiumizeError{});
+        }
+        Ok(())
+    }
+
     pub fn mkdir(&self, path: &str, name: &str) -> Result<()> {
         let parent_id = self.id(path)?;
         let url = API.to_owned() + "folder/create" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&parent_id=" + parent_id.as_str() + "&name=" + name;
