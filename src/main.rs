@@ -77,19 +77,33 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
                                         .takes_value(true)
                                         .help("Folder to download"))
                                     )
-                        .subcommand(SubCommand::with_name("transfer")
+                        .subcommand(SubCommand::with_name("transfer-url")
                                     .about("transfers an url")
-                                    .arg(Arg::with_name("url")
+                                    .arg(Arg::with_name("folder")
                                         .index(1)
                                         .required(true)
                                         .takes_value(true)
-                                        .help("Source url"))
-                                    .arg(Arg::with_name("folder")
+                                        .help("Destination folder"))
+                                    .arg(Arg::with_name("url")
                                         .index(2)
                                         .required(true)
                                         .takes_value(true)
-                                        .help("Destination folder"))
+                                        .help("Source url"))
                                     )
+                                    .subcommand(SubCommand::with_name("transfer-file")
+                                                .about("transfers a file")
+                                                .arg(Arg::with_name("folder")
+                                                    .index(1)
+                                                    .required(true)
+                                                    .takes_value(true)
+                                                    .help("Destination folder"))
+                                                .arg(Arg::with_name("files")
+                                                    .index(2)
+                                                    .required(true)
+                                                    .takes_value(true)
+                                                    .max_values(100000)
+                                                    .help("Source files(s)"))
+                                                )
                           .get_matches();
     
     let mut home = match env::home_dir() {
@@ -150,10 +164,16 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
         for f in list.content {
             println!("{}", f.name);
         }
-    } else if let Some(matches) = matches.subcommand_matches("transfer") {
+    } else if let Some(matches) = matches.subcommand_matches("transfer-url") {
         let folder = matches.value_of("folder").unwrap();
         let url = matches.value_of("url").unwrap();
         p.create_transfer_url(url, folder)?;
+    } else if let Some(matches) = matches.subcommand_matches("transfer-file") {
+        let folder = matches.value_of("folder").unwrap();
+        let files = matches.values_of("files").unwrap();
+        for file in files {
+            p.create_transfer_file(file, folder)?;
+        }
     } else if let Some(matches) = matches.subcommand_matches("mkdir") {
         let f = matches.value_of("folder").unwrap();
         p.mkdir2(f)?;

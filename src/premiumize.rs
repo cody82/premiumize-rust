@@ -5,8 +5,11 @@ use std::path::Path;
 use std::fs::File;
 use std::fs::create_dir;
 use reqwest::blocking::Client;
+use reqwest::blocking::Body;
 use std::io::{ErrorKind, Read, Write};
 use indicatif::ProgressBar;
+use reqwest::blocking::multipart;
+use std::io::BufReader;
 
 pub fn copy2<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W, bar: &ProgressBar) -> std::io::Result<u64>
 where
@@ -163,6 +166,26 @@ impl Premiumize
 
         let params = [("src", url), ("folder_id", folder_id.as_str())];
         let resp = self.client.post(requrl.as_str()).form(&params).send()?;
+
+        if resp.status().is_success() {
+        }
+        else {
+            return Err(PremiumizeError{});
+        }
+        Ok(())
+    }
+
+    pub fn create_transfer_file(&self, filepath: &str, target_dir: &str) -> Result<()> {
+        let folder_id = self.id(target_dir)?;
+        let requrl = API.to_owned() + "transfer/create" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&folder_id=" + folder_id.as_str();
+       
+        //let folder = folder_id.as_str();
+
+        let form = multipart::Form::new()
+            //.text("folder_id", folder)
+            .file("file", filepath)?;
+
+        let resp = self.client.post(requrl.as_str()).multipart(form).send()?;
 
         if resp.status().is_success() {
         }
