@@ -138,7 +138,7 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
         .get_matches();
     let mut home = match env::home_dir() {
         Some(path) => path,
-        None => return Err(PremiumizeError {}),
+        None => return Err(PremiumizeError {message: "Can not get home dir.".to_string()}),
     };
 
     home.push(".premiumize-rust.json");
@@ -166,8 +166,8 @@ fn main() -> Result<(), premiumize::PremiumizeError> {
     }
 
     if customer_id.is_none() || api_key.is_none() {
-        println!("Customer ID or API key not set.");
-        return Err(PremiumizeError {});
+        //println!();
+        return Err(PremiumizeError {message: "Customer ID or API key not set.".to_string()});
     }
 
     let p = Premiumize::new(customer_id.unwrap().as_str(), api_key.unwrap().as_str());

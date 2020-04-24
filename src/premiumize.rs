@@ -10,6 +10,7 @@ use std::io::{ErrorKind, Read, Write};
 use indicatif::ProgressBar;
 use reqwest::blocking::multipart;
 use std::io::BufReader;
+use std::error::Error;
 
 pub fn copy2<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W, bar: &ProgressBar) -> std::io::Result<u64>
 where
@@ -70,17 +71,33 @@ pub struct Response
 }
 
 type Result<T> = std::result::Result<T, PremiumizeError>;
+
 #[derive(Debug, Clone)]
-pub struct PremiumizeError;
+pub struct PremiumizeError
+{
+    pub message: String
+}
+
+impl PremiumizeError{
+    pub fn new() -> Self {
+        Self {
+            message: "?".to_string()
+        } 
+    }
+}
 
 impl std::convert::From<reqwest::Error> for PremiumizeError {
-    fn from(_e: reqwest::Error) -> Self {
-        Self{}
+    fn from(e: reqwest::Error) -> Self {
+        Self {
+            message: format!("reqwest::Error: {}", e)
+        }
     }
 }
 impl std::convert::From<std::io::Error> for PremiumizeError {
-    fn from(_e: std::io::Error) -> Self {
-        Self{}
+    fn from(e: std::io::Error) -> Self {
+        Self {
+            message: e.description().to_string()
+        }
     }
 }
 
@@ -112,7 +129,7 @@ impl Premiumize
                     Some(x) => {
                         list = self.list(Some(x.id.as_str()))?;
                     }
-                    None => return Err(PremiumizeError{})
+                    None => return Err(PremiumizeError{message: "Can not get id for path.".to_string()})
                 }
             }
         }
@@ -153,7 +170,7 @@ impl Premiumize
         let parts : Vec<&str> = fullname.split("/").collect();
         let name = match parts.last() {
             Some(x) => x,
-            None => return Err(PremiumizeError{})
+            None => return Err(PremiumizeError{message: "Invalid path.".to_string()})
         };
 
         let path = parts.iter().take(parts.len() - 1).fold("".to_string(), |a,b| a + "/" + b);
@@ -170,7 +187,7 @@ impl Premiumize
         if resp.status().is_success() {
         }
         else {
-            return Err(PremiumizeError{});
+            return Err(PremiumizeError{message: "Request failed.".to_string()});
         }
         Ok(())
     }
@@ -190,7 +207,7 @@ impl Premiumize
         if resp.status().is_success() {
         }
         else {
-            return Err(PremiumizeError{});
+            return Err(PremiumizeError{message: "Request failed.".to_string()});
         }
         Ok(())
     }
@@ -252,7 +269,7 @@ impl Premiumize
                     let _bytes = copy2(&mut resp, &mut file, &bar)?;
                 }
                 else {
-                    return Err(PremiumizeError{});
+                    return Err(PremiumizeError{message: "Download failed.".to_string()});
                 }
                 bar.finish();
             }
