@@ -8,6 +8,7 @@ use reqwest::blocking::Client;
 use reqwest::blocking::Body;
 use std::io::{ErrorKind, Read, Write};
 use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
 use reqwest::blocking::multipart;
 use std::io::BufReader;
 use std::error::Error;
@@ -147,6 +148,13 @@ impl Premiumize
 
         Ok(())
     }
+    
+    pub fn del_file_id(&self, id: &str) -> Result<()> {
+        let url = API.to_owned() + "item/delete" + "?customer_id=" + self.customer_id.as_str() + "&pin=" + self.key.as_str() + "&id=" + id;
+        let resp: String = self.client.get(url.as_str()).send()?.text()?;
+
+        Ok(())
+    }
 
     pub fn clear(&self, folder: &str) -> Result<()> {
         let id = self.id(folder)?;
@@ -160,7 +168,7 @@ impl Premiumize
             }
             else if item.type_ == "file"
             {
-                // todo
+                self.del_file_id(item.id.as_str())?;
             }
         }
         Ok(())
@@ -262,6 +270,9 @@ impl Premiumize
                 println!("file {}", item.link.as_str());
                 
                 let bar = ProgressBar::new(item.size);
+                bar.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.green/grey}] {bytes}/{total_bytes} ({eta})"));
+        //.progress_chars("#>-"));
 
                 let mut resp = self.client.get(item.link.as_str()).send()?;
                 if resp.status().is_success() {
